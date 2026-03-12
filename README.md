@@ -1,20 +1,20 @@
 # ACE Knowledge Map
 
-山田式ACEメソッド ナレッジマップ — 脳科学×アスリート教育の知識体系を可視化する教材ツール。
+An interactive knowledge graph visualization tool for educational content.
 
-## 機能
-- アメーバ状アニメーションによる知識ノードの可視化
-- ノードの追加・編集・削除（CRUD）
-- 6カテゴリ色分け（脳科学/身体/メンタル/ACEメソッド/実例/哲学）
-- ノード間の接続管理
-- メモ・noteリンクの添付
-- データのlocalStorage永続化
-- JSON形式のエクスポート/インポート
-- 物理演算によるレイアウト自動整理
-- モバイルタッチ対応
+## Features
+- Animated geometric node visualization
+- Node CRUD (add / edit / delete)
+- 6 color-coded categories
+- Connection management between nodes
+- Memo and URL attachment per node
+- localStorage persistence
+- JSON export / import
+- Physics-based auto layout
+- Mobile touch support
 
-## デプロイ
-Netlifyにて静的ホスティング。
+## Deploy
+Static hosting via Netlify.
 
-## ライセンス
-© 山田昌寛 / sun loves flow
+## License
+© sun loves flow
