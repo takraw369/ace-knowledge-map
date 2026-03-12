@@ -467,6 +467,144 @@
   ::-webkit-scrollbar { width: 4px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: rgba(90,200,170,0.15); border-radius: 2px; }
+
+  /* ===== 詳細パネル（左）===== */
+  .detail-panel {
+    position: fixed;
+    top: 0; left: -380px;
+    width: 360px;
+    height: 100vh;
+    z-index: 300;
+    background: var(--panel-bg);
+    border-right: 1px solid var(--border);
+    backdrop-filter: blur(24px);
+    padding: 72px 24px 28px;
+    overflow-y: auto;
+    transition: left 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .detail-panel.open { left: 0; }
+
+  .detail-node-name {
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    line-height: 1.3;
+    margin-bottom: 6px;
+  }
+
+  .detail-node-cat {
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .detail-node-cat::before {
+    content: '';
+    display: inline-block;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+
+  .detail-section {
+    margin-bottom: 22px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .detail-section:last-child { border-bottom: none; }
+
+  .detail-label {
+    font-size: 9px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 10px;
+  }
+
+  .detail-text {
+    font-size: 12px;
+    line-height: 1.8;
+    color: var(--text);
+  }
+
+  .detail-link-btn {
+    display: inline-block;
+    font-size: 11px;
+    color: var(--accent-dim);
+    border: 1px solid var(--border);
+    padding: 5px 12px;
+    border-radius: 3px;
+    text-decoration: none;
+    transition: all 0.2s;
+    letter-spacing: 0.5px;
+  }
+
+  .detail-link-btn:hover {
+    color: var(--accent);
+    border-color: var(--border-hover);
+  }
+
+  .detail-node-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border-radius: 3px;
+    font-size: 11px;
+    border: 1px solid rgba(255,255,255,0.06);
+    background: rgba(255,255,255,0.02);
+    margin: 3px 3px 3px 0;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: var(--text);
+  }
+
+  .detail-node-chip:hover {
+    background: rgba(255,255,255,0.06);
+    border-color: rgba(255,255,255,0.12);
+  }
+
+  .chip-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .detail-close {
+    position: absolute;
+    top: 20px; right: 20px;
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    font-size: 20px;
+    cursor: pointer;
+    padding: 4px;
+    transition: color 0.2s;
+  }
+
+  .detail-close:hover { color: var(--text); }
+
+  .pin-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 9px;
+    letter-spacing: 1.5px;
+    color: var(--accent-dim);
+    border: 1px solid var(--border);
+    padding: 3px 8px;
+    border-radius: 2px;
+    margin-bottom: 16px;
+    text-transform: uppercase;
+  }
 </style>
 </head>
 <body>
@@ -507,6 +645,35 @@
   <div class="t-memo" id="tMemo"></div>
   <div class="t-link" id="tLink"></div>
   <div class="t-conn" id="tConn"></div>
+</div>
+
+<!-- 詳細パネル（左） -->
+<div class="detail-panel" id="detailPanel">
+  <button class="detail-close" onclick="clearSelection()">×</button>
+  <div class="pin-badge">◈ PINNED</div>
+  <div class="detail-node-name" id="dName"></div>
+  <div class="detail-node-cat" id="dCat"></div>
+
+  <div class="detail-section" id="dMemoSection">
+    <div class="detail-label">攻略メモ</div>
+    <div class="detail-text" id="dMemo"></div>
+  </div>
+
+  <div class="detail-section" id="dLinkSection" style="display:none">
+    <div class="detail-label">リンク</div>
+    <a class="detail-link-btn" id="dLink" target="_blank">→ 開く</a>
+  </div>
+
+  <div class="detail-section" id="dPreSection">
+    <div class="detail-label">前提ステージ / 関連</div>
+    <div id="dPreNodes"></div>
+  </div>
+
+  <div class="detail-section" id="dNextSection">
+    <div class="detail-label">ネクストステップ</div>
+    <div id="dNextNodes"></div>
+    <div class="detail-text" id="dNextEmpty" style="color:var(--text-dim);font-size:11px;">接続ノードなし</div>
+  </div>
 </div>
 
 <div class="overlay-dim" id="overlay" onclick="closePanel()"></div>
@@ -735,19 +902,32 @@ function drawNode(node, t) {
   ctx.beginPath(); ctx.arc(x, y, 1.8, 0, Math.PI*2);
   ctx.fillStyle = `rgba(${col[0]},${col[1]},${col[2]},${alpha * 0.5})`; ctx.fill();
 
-  // === テキスト ===
+  // === ピン留め選択リング ===
+  if (node === selectedNode) {
+    const ringPulse = 1 + Math.sin(t * 2.5) * 0.05;
+    drawHexPath(ctx, x, y, r * 1.22 * ringPulse, outerRot);
+    ctx.strokeStyle = `rgba(${col[0]},${col[1]},${col[2]},0.7)`; ctx.lineWidth = 1.5;
+    ctx.setLineDash([4, 4]); ctx.stroke(); ctx.setLineDash([]);
+    // ピンアイコン（中心上部）
+    ctx.beginPath(); ctx.arc(x, y - r * 1.18, 4, 0, Math.PI*2);
+    ctx.fillStyle = `rgba(${col[0]},${col[1]},${col[2]},0.9)`; ctx.fill();
+  }
+
+  // === テキスト（白 + 暗いシャドウで視認性確保）===
   const fontSize = node.radius > 40 ? 13 : node.radius > 30 ? 11 : 10;
   ctx.font = `${node.radius>45?700:500} ${fontSize}px 'Zen Kaku Gothic New'`;
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillStyle = `rgba(${col[0]},${col[1]},${col[2]},${isHov?0.95:0.78})`;
+  ctx.shadowColor = 'rgba(0,0,0,0.9)'; ctx.shadowBlur = 5;
+  ctx.fillStyle = `rgba(235, 245, 255, ${isHov ? 0.98 : 0.88})`;
   const name = node.name;
   if (name.length > 8 && node.radius < 45) {
     const mid = Math.ceil(name.length/2);
     ctx.fillText(name.slice(0,mid), x, y-fontSize*0.45);
     ctx.fillText(name.slice(mid), x, y+fontSize*0.55);
   } else { ctx.fillText(name, x, y); }
+  ctx.shadowBlur = 0;
   if (node.link) { ctx.beginPath(); ctx.arc(x+node.radius*0.7, y-node.radius*0.7, 4, 0, Math.PI*2); ctx.fillStyle=`rgba(${col[0]},${col[1]},${col[2]},0.5)`; ctx.fill(); ctx.strokeStyle=`rgba(${col[0]},${col[1]},${col[2]},0.8)`; ctx.lineWidth=1; ctx.stroke(); }
-  if (node.memo) { ctx.beginPath(); ctx.arc(x-node.radius*0.7, y-node.radius*0.7, 3, 0, Math.PI*2); ctx.fillStyle='rgba(255,255,255,0.15)'; ctx.fill(); }
+  if (node.memo) { ctx.beginPath(); ctx.arc(x-node.radius*0.7, y-node.radius*0.7, 3, 0, Math.PI*2); ctx.fillStyle='rgba(255,255,255,0.2)'; ctx.fill(); }
 }
 
 function simulate() {
@@ -788,16 +968,17 @@ function render() {
   requestAnimationFrame(render);
 }
 
-let dragNode=null, hoveredNode=null, dragOX=0, dragOY=0, ctxTarget=null;
+let dragNode=null, hoveredNode=null, dragOX=0, dragOY=0, ctxTarget=null, selectedNode=null;
+let dragMoved=false;
 
 function getNodeAt(x,y) {
   for (let i=nodes.length-1;i>=0;i--) { const dx=x-nodes[i].x, dy=y-nodes[i].y; if(dx*dx+dy*dy<nodes[i].radius*nodes[i].radius*1.4) return nodes[i]; }
   return null;
 }
 
-canvas.addEventListener('mousedown', e => { if(e.button!==0)return; hideCtxMenu(); const n=getNodeAt(e.clientX,e.clientY); if(n){dragNode=n;dragOX=e.clientX-n.x;dragOY=e.clientY-n.y;} });
+canvas.addEventListener('mousedown', e => { if(e.button!==0)return; hideCtxMenu(); dragMoved=false; const n=getNodeAt(e.clientX,e.clientY); if(n){dragNode=n;dragOX=e.clientX-n.x;dragOY=e.clientY-n.y;} });
 canvas.addEventListener('mousemove', e => {
-  if(dragNode){dragNode.x=e.clientX-dragOX;dragNode.y=e.clientY-dragOY;dragNode.vx=0;dragNode.vy=0;}
+  if(dragNode){dragNode.x=e.clientX-dragOX;dragNode.y=e.clientY-dragOY;dragNode.vx=0;dragNode.vy=0;dragMoved=true;}
   const n=getNodeAt(e.clientX,e.clientY); hoveredNode=n;
   const tip=document.getElementById('tooltip');
   if(n&&!dragNode){
@@ -812,7 +993,17 @@ canvas.addEventListener('mousemove', e => {
     canvas.style.cursor='grab';
   } else { tip.classList.remove('visible'); canvas.style.cursor=dragNode?'grabbing':'default'; }
 });
-canvas.addEventListener('mouseup', () => { if(dragNode){saveState();dragNode=null;} });
+canvas.addEventListener('mouseup', e => {
+  if(dragNode){
+    if(!dragMoved){ togglePin(dragNode); }
+    else { saveState(); }
+    dragNode=null;
+  } else if(!dragMoved){
+    const n=getNodeAt(e.clientX,e.clientY);
+    if(!n) clearSelection();
+  }
+  dragMoved=false;
+});
 canvas.addEventListener('contextmenu', e => { e.preventDefault(); const n=getNodeAt(e.clientX,e.clientY); if(!n){hideCtxMenu();return;} ctxTarget=n; const menu=document.getElementById('ctxMenu'); menu.style.left=e.clientX+'px'; menu.style.top=e.clientY+'px'; menu.classList.add('visible'); });
 document.addEventListener('click', e => { if(!e.target.closest('.context-menu')) hideCtxMenu(); });
 function hideCtxMenu() { document.getElementById('ctxMenu').classList.remove('visible'); }
@@ -892,6 +1083,78 @@ function deleteNode() {
 
 function showPanel(){document.getElementById('sidePanel').classList.add('open');document.getElementById('overlay').classList.add('active');}
 function closePanel(){document.getElementById('sidePanel').classList.remove('open');document.getElementById('overlay').classList.remove('active');editingNodeId=null;}
+
+function togglePin(node) {
+  selectedNode = selectedNode === node ? null : node;
+  updateDetailPanel();
+}
+
+function clearSelection() {
+  selectedNode = null;
+  document.getElementById('detailPanel').classList.remove('open');
+}
+
+function updateDetailPanel() {
+  const panel = document.getElementById('detailPanel');
+  if (!selectedNode) { panel.classList.remove('open'); return; }
+  const n = selectedNode;
+  const cat = CATEGORIES[n.cat] || { label: n.cat, color: [150,150,150] };
+  const col = `rgb(${cat.color.join(',')})`;
+
+  document.getElementById('dName').textContent = n.name;
+  document.getElementById('dName').style.color = col;
+  document.getElementById('dCat').textContent = cat.label;
+  document.getElementById('dCat').style.color = col;
+
+  const memoEl = document.getElementById('dMemo');
+  memoEl.textContent = n.memo || '（メモなし）';
+  document.getElementById('dMemoSection').style.display = 'block';
+
+  const linkSection = document.getElementById('dLinkSection');
+  if (n.link) {
+    document.getElementById('dLink').href = n.link;
+    document.getElementById('dLink').style.color = col;
+    linkSection.style.display = 'block';
+  } else { linkSection.style.display = 'none'; }
+
+  // 接続ノードを取得
+  const connIds = edges.filter(e=>e.from===n.id||e.to===n.id).map(e=>e.from===n.id?e.to:e.from);
+  const connNodes = connIds.map(id=>nodes.find(nn=>nn.id===id)).filter(Boolean);
+
+  // 前提ステージ（接続の前半）
+  const preEl = document.getElementById('dPreNodes');
+  preEl.innerHTML = '';
+  const half = Math.ceil(connNodes.length / 2);
+  const preNodes = connNodes.slice(0, half);
+  if (preNodes.length === 0) {
+    preEl.innerHTML = '<span style="font-size:11px;color:var(--text-dim)">なし</span>';
+  } else {
+    preNodes.forEach(cn => renderChip(preEl, cn));
+  }
+
+  // ネクストステップ（接続の後半）
+  const nextEl = document.getElementById('dNextNodes');
+  nextEl.innerHTML = '';
+  const nextNodes = connNodes.slice(half);
+  const emptyEl = document.getElementById('dNextEmpty');
+  if (nextNodes.length === 0) {
+    emptyEl.style.display = 'block';
+  } else {
+    emptyEl.style.display = 'none';
+    nextNodes.forEach(cn => renderChip(nextEl, cn));
+  }
+
+  panel.classList.add('open');
+}
+
+function renderChip(parent, node) {
+  const cat = CATEGORIES[node.cat] || { color: [150,150,150] };
+  const chip = document.createElement('span');
+  chip.className = 'detail-node-chip';
+  chip.innerHTML = `<span class="chip-dot" style="background:rgb(${cat.color.join(',')})"></span>${node.name}`;
+  chip.onclick = () => { selectedNode = node; updateDetailPanel(); };
+  parent.appendChild(chip);
+}
 
 function ctxEdit(){hideCtxMenu();if(ctxTarget)openEditPanel(ctxTarget);}
 function ctxAddConnected(){hideCtxMenu();if(ctxTarget)openAddPanel(ctxTarget.id);}
