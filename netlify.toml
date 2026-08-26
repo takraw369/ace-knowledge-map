@@ -1,2 +1,5 @@
-[build]
-  publish = "."
+[[redirects]]
+  from = "/*"
+  to = "https://ace-quest-board.netlify.app/knowledge"
+  status = 301
+  force = true
