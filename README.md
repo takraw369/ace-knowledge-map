@@ -1,6 +1,6 @@
 # ACE Knowledge Map
 
-Interactive visual knowledge-mapping project.
+Legacy prototype retained for history and rollback only.
 
-This repository is used for ongoing prototyping and experimentation.
-Detailed methodology, taxonomy, internal concepts, and design notes are intentionally not documented publicly.
+The canonical Knowledge experience now lives inside the unified app at `/knowledge` in `takraw369/ace-quest-board`.
+The standalone Netlify deployment is redirect-only and should not be used as a product surface.
